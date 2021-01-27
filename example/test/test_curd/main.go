@@ -3,18 +3,20 @@ package main
 import (
 	"fmt"
 	goacache "github.com/nicholasguan/goacache/core"
+	"github.com/nicholasguan/goacache/misc"
+	"time"
 )
 
 func main() {
 	table := goacache.NewCacheTable()
 
-	key, key1 := "test", "test1"
-	table.AddItem(key, 123)
+	var key, key1 misc.CacheKeyType = "test", "test1"
+	table.AddItem(key, 123, 123*time.Second)
 
 	fmt.Println(table.Exists(key))
 	printItem(key, table.SearchItem(key))
 
-	table.AddItem(key, 456)
+	table.AddItem(key, 456, 123*time.Second)
 	printItem(key, table.SearchItem(key))
 
 	table.DelItem(key)
@@ -24,7 +26,7 @@ func main() {
 	printItem(key1, table.SearchItem(key1))
 }
 
-func printItem(key string, item *goacache.CacheItem) {
+func printItem(key misc.CacheKeyType, item *goacache.CacheItem) {
 	if item != nil {
 		fmt.Printf("%s => %v %v\n", key, item.GetKey(), item.GetValue())
 	} else {
