@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/nicholasguan/goacache/misc"
 	"sync"
 	"time"
@@ -10,12 +11,28 @@ type CacheTable struct {
 	sync.RWMutex
 
 	cacheMap map[misc.CacheKeyType]*CacheItem
+
+	checkExpiredTicker *time.Ticker
 }
 
 func NewCacheTable() *CacheTable {
-	return &CacheTable{
-		cacheMap: make(map[misc.CacheKeyType]*CacheItem),
+	checkTicker := time.NewTicker(time.Second)
+	cacheTable := &CacheTable{
+		cacheMap:           make(map[misc.CacheKeyType]*CacheItem),
+		checkExpiredTicker: checkTicker,
 	}
+
+	go func() {
+		for {
+			select {
+			case <-checkTicker.C:
+				fmt.Println("Self-checking is doing")
+				cacheTable.checkAllItemExpired()
+			}
+		}
+	}()
+
+	return cacheTable
 }
 
 func (table *CacheTable) AddItem(key misc.CacheKeyType, value interface{}, duration time.Duration) {
@@ -24,6 +41,7 @@ func (table *CacheTable) AddItem(key misc.CacheKeyType, value interface{}, durat
 
 	cacheItem := NewCacheItem(key, value, duration)
 	table.cacheMap[key] = cacheItem
+	fmt.Println("add item", key, value)
 }
 
 func (table *CacheTable) DelItem(key misc.CacheKeyType) {
@@ -31,13 +49,10 @@ func (table *CacheTable) DelItem(key misc.CacheKeyType) {
 	defer table.Unlock()
 
 	delete(table.cacheMap, key)
+	fmt.Println("delete item", key)
 }
 
 func (table *CacheTable) Exists(key misc.CacheKeyType) bool {
-	if !table.checkItemExpired(key) {
-		return false
-	}
-
 	table.RLock()
 	defer table.RUnlock()
 	_, ok := table.cacheMap[key]
@@ -46,10 +61,6 @@ func (table *CacheTable) Exists(key misc.CacheKeyType) bool {
 }
 
 func (table *CacheTable) SearchItem(key misc.CacheKeyType) *CacheItem {
-	if !table.checkItemExpired(key) {
-		return nil
-	}
-
 	table.RLock()
 	defer table.RUnlock()
 	item, ok := table.cacheMap[key]
@@ -59,6 +70,12 @@ func (table *CacheTable) SearchItem(key misc.CacheKeyType) *CacheItem {
 	}
 
 	return item
+}
+
+func (table *CacheTable) checkAllItemExpired() {
+	for key := range table.cacheMap {
+		table.checkItemExpired(key)
+	}
 }
 
 func (table *CacheTable) checkItemExpired(key misc.CacheKeyType) bool {

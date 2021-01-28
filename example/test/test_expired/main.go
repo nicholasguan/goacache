@@ -37,7 +37,7 @@ func main() {
 	currentTime = time.Now()
 	for table.Exists(key1) {
 		currentSecond := time.Now().Sub(currentTime) / time.Second
-		fmt.Printf("第%d秒：\n", currentSecond)
+		//fmt.Printf("第%d秒：\n", currentSecond)
 		if currentSecond == duration/time.Second/2 {
 			// 直接新建
 			// table.AddItem(key1, "修改value", duration)
@@ -60,7 +60,7 @@ func main() {
 
 func printItem(key misc.CacheKeyType, item *goacache.CacheItem) {
 	if item != nil {
-		fmt.Printf("%s => %+v\n", key, item)
+		fmt.Printf("%s => %v\n", key, item)
 	} else {
 		fmt.Printf("Can't find any item by key(%v)\n", key)
 	}
